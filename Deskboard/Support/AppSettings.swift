@@ -34,7 +34,10 @@ final class AppSettings {
     private init() {
         let d = UserDefaults.standard
         claudeAPIBase = d.string(forKey: "claudeAPIBase") ?? "https://claude-status-api.mavoxgt.workers.dev"
-        claudeToken = KeychainHelper.get("claudeToken") ?? ""
+        // Convenience: the claude-status hooks already keep the token in
+        // ~/.claude/settings.json (env.CLAUDE_STATUS_TOKEN) — use it as the
+        // default so the widget works on first launch.
+        claudeToken = KeychainHelper.get("claudeToken") ?? Self.claudeTokenFromClaudeSettings() ?? ""
         imapHost = d.string(forKey: "imapHost") ?? "imap.ionos.de"
         imapUser = d.string(forKey: "imapUser") ?? ""
         imapPassword = KeychainHelper.get("imapPassword") ?? ""
@@ -43,5 +46,17 @@ final class AppSettings {
         inTouchAPIBase = d.string(forKey: "inTouchAPIBase") ?? "https://intouch-backend.mavoxgt.workers.dev"
         inTouchKey = KeychainHelper.get("inTouchKey") ?? ""
         weatherPlace = d.string(forKey: "weatherPlace") ?? ""
+    }
+
+    private static func claudeTokenFromClaudeSettings() -> String? {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/settings.json")
+        guard let data = try? Data(contentsOf: url),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let env = root["env"] as? [String: Any],
+              let token = env["CLAUDE_STATUS_TOKEN"] as? String, !token.isEmpty else {
+            return nil
+        }
+        return token
     }
 }

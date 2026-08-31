@@ -56,9 +56,15 @@ struct ClaudeSessionsWidget: View {
 private struct SessionRow: View {
     let task: ClaudeTask
 
+    /// Live sessions heartbeat at least once a minute (PostToolUse hook).
+    /// A "running" task without updates for 5 min is most likely a dead shell.
+    private var isStalled: Bool {
+        task.status == "running" && task.updatedDate < Date().addingTimeInterval(-300)
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 9) {
-            StatusDot(status: task.status)
+            StatusDot(status: isStalled ? "stalled" : task.status)
                 .padding(.top, 4)
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.title)
@@ -68,7 +74,7 @@ private struct SessionRow: View {
                 HStack(spacing: 6) {
                     Text(statusLabel)
                         .font(Theme.caption)
-                        .foregroundStyle(statusColor)
+                        .foregroundStyle(isStalled ? Theme.faint : statusColor)
                     Text("·")
                         .font(Theme.caption)
                         .foregroundStyle(Theme.faint)
@@ -83,6 +89,7 @@ private struct SessionRow: View {
     }
 
     private var statusLabel: String {
+        if isStalled { return "Stalled?" }
         switch task.status {
         case "running": return "Running"
         case "waiting": return "Waiting for input"
@@ -129,6 +136,7 @@ private struct StatusDot: View {
         case "waiting": return Theme.warn
         case "done": return Theme.ok
         case "failed": return Theme.bad
+        case "stalled": return Theme.faint
         default: return Theme.muted
         }
     }
