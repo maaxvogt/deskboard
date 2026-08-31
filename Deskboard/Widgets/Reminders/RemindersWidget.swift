@@ -26,9 +26,16 @@ struct RemindersWidget: View {
         }
         .task {
             await client.refresh()
+            // Items im 10-s-Takt (fühlbar live), Bereichs-Liste jede Minute.
+            var tick = 0
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(60))
-                await client.refresh()
+                try? await Task.sleep(for: .seconds(10))
+                tick += 1
+                if tick % 6 == 0 {
+                    await client.refresh()
+                } else {
+                    await client.loadItems()
+                }
             }
         }
     }
