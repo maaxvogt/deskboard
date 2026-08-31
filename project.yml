@@ -1,0 +1,27 @@
+name: Deskboard
+options:
+  bundleIdPrefix: com.maxvogt
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+targets:
+  Deskboard:
+    type: application
+    platform: macOS
+    sources:
+      - path: Deskboard
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.maxvogt.deskboard
+        DEVELOPMENT_TEAM: M24UT92W9A
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_VERSION: "5.0"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ENABLE_HARDENED_RUNTIME: false
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Deskboard shows your upcoming events in the calendar widget."
+        INFOPLIST_KEY_NSCalendarsUsageDescription: "Deskboard shows your upcoming events in the calendar widget."
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity

@@ -1,0 +1,13 @@
+# Xcode
+*.xcodeproj
+xcuserdata/
+DerivedData/
+build/
+*.xcresult
+
+# macOS
+.DS_Store
+
+# Secrets — never commit credentials
+*.p8
+.dev.vars
