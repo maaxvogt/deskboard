@@ -23,6 +23,13 @@ Build grün. Repo `maaxvogt/deskboard` (privat).
 3. **Gerätetest Reminders-Flow:** App-Build aufs iPhone, Bereich freigeben (Menü des
    Bereichs → „Über API freigeben"), Sync in beide Richtungen prüfen
    (Widget abhaken → App; App-Änderung → Widget).
+   **Gefixter Live-Sync-Bug (31.8.2026, 1. Gerätetest):** kick() cancelte den
+   EIGENEN laufenden Sync (Op anwenden → store.save → Notification → kick →
+   Task.cancel → ack/push flogen als CancellationError raus) → Ops blieben
+   pending, wurden bei jedem Lauf erneut angewendet (Duplikate in der App),
+   push kam nie an. Fix: Debounce-Cancel trifft nur noch das Warten, Sync läuft
+   in eigenem Task (launchSync + rerunRequested); zusätzlich Op-Anwendung
+   idempotent über persistierte applied-Op-IDs. Erfordert NEUEN App-Build.
 4. **iPad-Batterie:** iPad war zur Bauzeit nicht gekoppelt sichtbar — im Finder
    „iPad über WLAN anzeigen" aktivieren, dann liefert `idevice_id -n` das Gerät.
 5. **API-Doku:** Reminders-Capability-Seite für intouch-api-docs fehlt noch
