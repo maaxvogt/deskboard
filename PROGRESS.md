@@ -11,20 +11,18 @@ Build grün. Repo `maaxvogt/deskboard` (privat).
 
 **Offen / Blocker:**
 
-1. **inTouch-Backend nicht deployt.** Wrangler ist global mit `max.vogt@quietoffice.de`
-   (Poddie) eingeloggt; inTouch + D1 `noolp` liegen auf `mavoxgt@gmail.com`.
-   Nötig: `CLOUDFLARE_API_TOKEN` für den mavoxgt-Account setzen (oder umloggen), dann:
-   ```bash
-   cd ~/Documents/inTouch/backend
-   npx wrangler d1 execute noolp --remote --file=src/sql-schema/api_reminders.sql -y
-   npx wrangler deploy
-   ```
-   Bis dahin zeigt das Reminders-Widget „inTouch unreachable"/leer.
+1. ~~inTouch-Backend nicht deployt~~ → **ERLEDIGT 31.8.2026**: Max hat Wrangler auf
+   `mavoxgt@gmail.com` umgeloggt; Schema `api_reminders.sql` remote eingespielt,
+   `intouch-backend` deployt (Version ddde4aff). Kompletter Flow in Produktion
+   getestet: push → extern lesen → extern add/PATCH → pending (beide Op-Typen) →
+   ack → Opt-out räumt Spiegel; falscher Key → 403.
 2. **inTouch-App:** Änderungen (Opt-in pro Bereich, Sync-Service) sind im Working Tree,
-   Device-Build grün, aber UNCOMMITTET und ungetestet am Gerät. Simulator-Build des
-   Repos bricht schon vorher an RealtimeKit (vorbestehend, nicht von uns).
-3. **Gerätetest Reminders-Flow:** App-Build aufs iPhone, Bereich freigeben, Sync in
-   beide Richtungen prüfen (Widget abhaken → App; App-Änderung → Widget).
+   Device-Build grün, aber UNCOMMITTET (Backend-Stand ist deployt → committen empfohlen)
+   und ungetestet am Gerät. Simulator-Build des Repos bricht schon vorher an
+   RealtimeKit (vorbestehend, nicht von uns).
+3. **Gerätetest Reminders-Flow:** App-Build aufs iPhone, Bereich freigeben (Menü des
+   Bereichs → „Über API freigeben"), Sync in beide Richtungen prüfen
+   (Widget abhaken → App; App-Änderung → Widget).
 4. **iPad-Batterie:** iPad war zur Bauzeit nicht gekoppelt sichtbar — im Finder
    „iPad über WLAN anzeigen" aktivieren, dann liefert `idevice_id -n` das Gerät.
 5. **API-Doku:** Reminders-Capability-Seite für intouch-api-docs fehlt noch
