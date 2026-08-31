@@ -11,6 +11,8 @@ struct DashboardView: View {
                     .frame(maxHeight: .infinity)
                 SystemMonitorWidget()
                     .frame(maxHeight: .infinity)
+                DeviceBatteryWidget()
+                    .frame(height: 150)
             }
 
             ClaudeSessionsWidget()
