@@ -1,16 +1,19 @@
 import SwiftUI
 
-/// Shared card chrome for every widget: title row, optional status dot,
-/// consistent padding, hairline border.
+/// Shared card chrome for every widget: tinted surface (no border), title row
+/// in the widget's accent color, consistent padding.
 struct WidgetCard<Content: View, Accessory: View>: View {
     let title: String
+    let tint: Theme.Tint
     @ViewBuilder var content: Content
     @ViewBuilder var accessory: Accessory
 
     init(_ title: String,
+         tint: Theme.Tint = Theme.tintNeutral,
          @ViewBuilder content: () -> Content,
          @ViewBuilder accessory: () -> Accessory = { EmptyView() }) {
         self.title = title
+        self.tint = tint
         self.content = content()
         self.accessory = accessory()
     }
@@ -21,7 +24,7 @@ struct WidgetCard<Content: View, Accessory: View>: View {
                 Text(title.uppercased())
                     .font(.system(size: 11, weight: .semibold))
                     .kerning(0.6)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(tint.accent)
                 Spacer()
                 accessory
             }
@@ -30,12 +33,8 @@ struct WidgetCard<Content: View, Accessory: View>: View {
         }
         .padding(Theme.cardPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Theme.card)
+        .background(tint.surface)
         .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .strokeBorder(Theme.border, lineWidth: 1)
-        )
     }
 }
 
@@ -46,6 +45,7 @@ struct WidgetPlaceholder: View {
         Text(text)
             .font(Theme.caption)
             .foregroundStyle(Theme.faint)
+            .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 }

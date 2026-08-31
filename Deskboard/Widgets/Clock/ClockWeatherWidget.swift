@@ -4,7 +4,7 @@ struct ClockWeatherWidget: View {
     @State private var weather = WeatherService()
 
     var body: some View {
-        WidgetCard("Today") {
+        WidgetCard("Today", tint: Theme.tintToday) {
             VStack(alignment: .leading, spacing: 12) {
                 TimelineView(.everyMinute) { context in
                     VStack(alignment: .leading, spacing: 2) {

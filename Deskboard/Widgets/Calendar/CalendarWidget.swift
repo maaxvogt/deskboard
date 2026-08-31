@@ -5,7 +5,7 @@ struct CalendarWidget: View {
     @State private var service = CalendarService()
 
     var body: some View {
-        WidgetCard("Calendar") {
+        WidgetCard("Calendar", tint: Theme.tintCalendar) {
             if service.accessDenied {
                 WidgetPlaceholder(text: "Calendar access denied — allow it in System Settings → Privacy.")
             } else if service.days.isEmpty {

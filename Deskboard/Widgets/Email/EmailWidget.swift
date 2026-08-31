@@ -36,7 +36,7 @@ struct EmailWidget: View {
     @State private var service = EmailService()
 
     var body: some View {
-        WidgetCard("Mail") {
+        WidgetCard("Mail", tint: Theme.tintMail) {
             content
         } accessory: {
             if service.unseen > 0 {

@@ -4,7 +4,7 @@ struct SystemMonitorWidget: View {
     @State private var stats = SystemStats()
 
     var body: some View {
-        WidgetCard("System") {
+        WidgetCard("System", tint: Theme.tintSystem) {
             VStack(alignment: .leading, spacing: 12) {
                 gauge(label: "CPU",
                       fraction: stats.snapshot.cpuPercent / 100,

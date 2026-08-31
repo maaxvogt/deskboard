@@ -7,7 +7,7 @@ struct RemindersWidget: View {
     @State private var newItemText = ""
 
     var body: some View {
-        WidgetCard("Reminders") {
+        WidgetCard("Reminders", tint: Theme.tintReminders) {
             content
         } accessory: {
             if client.areas.count > 1 {

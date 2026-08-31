@@ -7,11 +7,11 @@ enum Theme {
     // MARK: Colors
 
     /// Window background behind all cards.
-    static let background = dynamic(light: NSColor(hex: 0xF2F2F4), dark: NSColor(hex: 0x121215))
-    /// Card surface.
+    static let background = dynamic(light: NSColor(hex: 0xEBECEF), dark: NSColor(hex: 0x101013))
+    /// Neutral card surface (fallback when a widget has no tint).
     static let card = dynamic(light: NSColor(hex: 0xFFFFFF), dark: NSColor(hex: 0x1C1C21))
-    /// Hairline border around cards and separators.
-    static let border = dynamic(light: NSColor(hex: 0xE2E2E6), dark: NSColor(hex: 0x2A2A31))
+    /// Hairline for separators inside cards.
+    static let border = dynamic(light: NSColor(hex: 0xDDDDE2), dark: NSColor(hex: 0x2A2A31))
     /// Primary text.
     static let text = dynamic(light: NSColor(hex: 0x1B1B1F), dark: NSColor(hex: 0xEBEBEF))
     /// Secondary / muted text.
@@ -28,6 +28,41 @@ enum Theme {
     static let warn = dynamic(light: NSColor(hex: 0xB07A1E), dark: NSColor(hex: 0xD9A84E))
     static let bad = dynamic(light: NSColor(hex: 0xB3402E), dark: NSColor(hex: 0xD4705F))
     static let info = dynamic(light: NSColor(hex: 0x3D6BB3), dark: NSColor(hex: 0x6E97D4))
+
+    // MARK: Widget tints
+    // Each widget gets its own quietly tinted surface (instead of borders) and
+    // a matching accent for its title. Muted hues — color, not carnival.
+
+    struct Tint {
+        let surface: Color
+        let accent: Color
+    }
+
+    static let tintToday = Tint(
+        surface: dynamic(light: NSColor(hex: 0xE7EEF8), dark: NSColor(hex: 0x1C2634)),
+        accent: dynamic(light: NSColor(hex: 0x3D6BB3), dark: NSColor(hex: 0x82A8DE)))
+    static let tintSystem = Tint(
+        surface: dynamic(light: NSColor(hex: 0xE3F0ED), dark: NSColor(hex: 0x172725)),
+        accent: dynamic(light: NSColor(hex: 0x2E7D74), dark: NSColor(hex: 0x6FBDB2)))
+    static let tintBattery = Tint(
+        surface: dynamic(light: NSColor(hex: 0xE7F2E7), dark: NSColor(hex: 0x1B2A1C)),
+        accent: dynamic(light: NSColor(hex: 0x2E7D4F), dark: NSColor(hex: 0x6FBE8E)))
+    static let tintClaude = Tint(
+        surface: dynamic(light: NSColor(hex: 0xECEAF8), dark: NSColor(hex: 0x232136)),
+        accent: dynamic(light: NSColor(hex: 0x5B54B0), dark: NSColor(hex: 0x9D96DF)))
+    static let tintCalendar = Tint(
+        surface: dynamic(light: NSColor(hex: 0xF8ECEB), dark: NSColor(hex: 0x2D2022)),
+        accent: dynamic(light: NSColor(hex: 0xB04A44), dark: NSColor(hex: 0xD98A82)))
+    static let tintReminders = Tint(
+        surface: dynamic(light: NSColor(hex: 0xF7F0E0), dark: NSColor(hex: 0x2B2518)),
+        accent: dynamic(light: NSColor(hex: 0xA87A1C), dark: NSColor(hex: 0xD3A94E)))
+    static let tintMail = Tint(
+        surface: dynamic(light: NSColor(hex: 0xE4F0F7), dark: NSColor(hex: 0x1A2733)),
+        accent: dynamic(light: NSColor(hex: 0x3577A8), dark: NSColor(hex: 0x7FB2D9)))
+    static let tintGitHub = Tint(
+        surface: dynamic(light: NSColor(hex: 0xEEEDF3), dark: NSColor(hex: 0x25242C)),
+        accent: dynamic(light: NSColor(hex: 0x63637A), dark: NSColor(hex: 0xA2A2B5)))
+    static let tintNeutral = Tint(surface: card, accent: muted)
 
     // MARK: Typography
 

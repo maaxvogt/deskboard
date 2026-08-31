@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UserNotifications
 
 // Mirrors the claude-status-api contract (see Claude Status repo, root CLAUDE.md).
 struct ClaudeTask: Codable, Identifiable, Equatable {
@@ -28,16 +29,35 @@ final class ClaudeStatusClient {
     private var socket: URLSessionWebSocketTask?
     private var running = false
 
+    /// Only today's sessions are shown, per design.
     var active: [ClaudeTask] {
-        tasks.filter(\.isActive).sorted { $0.updated_at > $1.updated_at }
+        tasks
+            .filter { $0.isActive && Calendar.current.isDateInToday($0.updatedDate) }
+            .sorted { $0.updated_at > $1.updated_at }
     }
 
-    /// Finished tasks from the last 24 h, newest first.
+    /// Sessions finished today, newest first.
     var recent: [ClaudeTask] {
-        let cutoff = Date().addingTimeInterval(-24 * 3600).timeIntervalSince1970 * 1000
-        return tasks
-            .filter { !$0.isActive && $0.updated_at > cutoff }
+        tasks
+            .filter { !$0.isActive && Calendar.current.isDateInToday($0.updatedDate) }
             .sorted { $0.updated_at > $1.updated_at }
+    }
+
+    /// Manual status override from the dashboard (context menu on a row).
+    func setStatus(_ task: ClaudeTask, to status: String) async {
+        let settings = AppSettings.shared
+        guard let url = URL(string: settings.claudeAPIBase + "/api/tasks/\(task.id)") else { return }
+        // Optimistic; the WebSocket broadcast confirms (or a refetch corrects).
+        if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks[idx].status = status
+            tasks[idx].updated_at = Date().timeIntervalSince1970 * 1000
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(settings.claudeToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["status": status])
+        _ = try? await URLSession.shared.data(for: request)
     }
 
     func start() async {
@@ -139,7 +159,13 @@ final class ClaudeStatusClient {
             if !tasks.contains(where: { $0.id == task.id }) { tasks.append(task) }
         case "task.updated":
             if let idx = tasks.firstIndex(where: { $0.id == task.id }) {
+                let previous = tasks[idx].status
                 tasks[idx] = task
+                // Notify only when a session starts NEEDING the user — a live
+                // transition into "waiting" — never on other status changes.
+                if task.status == "waiting", previous == "running" || previous == "queued" {
+                    ClaudeNotifier.notifyNeedsInput(title: task.title)
+                }
             } else {
                 tasks.append(task)
             }
@@ -148,5 +174,27 @@ final class ClaudeStatusClient {
         default:
             break
         }
+    }
+}
+
+/// Local macOS notifications for Claude sessions that wait for the user.
+enum ClaudeNotifier {
+    private static var authorizationRequested = false
+
+    static func notifyNeedsInput(title: String) {
+        let center = UNUserNotificationCenter.current()
+        if !authorizationRequested {
+            authorizationRequested = true
+            center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        }
+        let content = UNMutableNotificationContent()
+        content.title = "Claude Code needs your input"
+        content.body = title
+        content.sound = .default
+        center.add(UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil
+        ))
     }
 }

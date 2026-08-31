@@ -23,23 +23,55 @@ final class GitHubService {
     private(set) var error: String?
     private(set) var configured = false
 
+    private var cachedCLIToken: String?
+
     func refresh() async {
         let settings = AppSettings.shared
-        guard !settings.githubToken.isEmpty, !settings.githubUser.isEmpty else {
+        guard let token = resolveToken(), !settings.githubUser.isEmpty else {
             configured = false
             return
         }
         configured = true
         do {
-            async let prs = fetchOpenPRs(user: settings.githubUser, token: settings.githubToken)
-            async let evts = fetchEvents(user: settings.githubUser, token: settings.githubToken)
+            async let prs = fetchOpenPRs(user: settings.githubUser, token: token)
+            async let evts = fetchEvents(user: settings.githubUser, token: token)
             openPRs = try await prs
             events = try await evts
             error = nil
+        } catch let apiError as GitHubAPIError {
+            self.error = apiError.message
         } catch {
             self.error = "GitHub unreachable"
         }
     }
+
+    /// Settings token first; otherwise borrow the local `gh` CLI login.
+    private func resolveToken() -> String? {
+        let fromSettings = AppSettings.shared.githubToken
+        if !fromSettings.isEmpty { return fromSettings }
+        if let cached = cachedCLIToken { return cached }
+        for ghPath in ["/opt/homebrew/bin/gh", "/usr/local/bin/gh"]
+        where FileManager.default.isExecutableFile(atPath: ghPath) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: ghPath)
+            process.arguments = ["auth", "token"]
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = Pipe()
+            guard (try? process.run()) != nil else { continue }
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else { continue }
+            let token = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !token.isEmpty {
+                cachedCLIToken = token
+                return token
+            }
+        }
+        return nil
+    }
+
+    struct GitHubAPIError: Error { let message: String }
 
     private func request(_ path: String, token: String) -> URLRequest {
         var request = URLRequest(url: URL(string: "https://api.github.com" + path)!)
@@ -48,10 +80,21 @@ final class GitHubService {
         return request
     }
 
+    private func check(_ response: URLResponse) throws {
+        guard let status = (response as? HTTPURLResponse)?.statusCode else { return }
+        switch status {
+        case 200...299: return
+        case 401: throw GitHubAPIError(message: "Token invalid — check Settings")
+        case 403, 429: throw GitHubAPIError(message: "Rate limited or missing token scope")
+        default: throw GitHubAPIError(message: "GitHub error \(status)")
+        }
+    }
+
     private func fetchOpenPRs(user: String, token: String) async throws -> [GitHubPR] {
         let query = "is:pr+is:open+author:\(user)"
-        let (data, _) = try await URLSession.shared.data(
+        let (data, response) = try await URLSession.shared.data(
             for: request("/search/issues?q=\(query)&sort=updated&per_page=6", token: token))
+        try check(response)
 
         struct SearchResult: Decodable {
             struct Item: Decodable {
@@ -76,8 +119,9 @@ final class GitHubService {
     }
 
     private func fetchEvents(user: String, token: String) async throws -> [GitHubEvent] {
-        let (data, _) = try await URLSession.shared.data(
+        let (data, response) = try await URLSession.shared.data(
             for: request("/users/\(user)/events?per_page=15", token: token))
+        try check(response)
 
         struct Event: Decodable {
             struct Repo: Decodable { let name: String }

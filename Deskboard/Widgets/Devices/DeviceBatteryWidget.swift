@@ -4,7 +4,7 @@ struct DeviceBatteryWidget: View {
     @State private var service = DeviceBatteryService()
 
     var body: some View {
-        WidgetCard("Batteries") {
+        WidgetCard("Batteries", tint: Theme.tintBattery) {
             if service.devices.isEmpty {
                 WidgetPlaceholder(text: service.toolAvailable
                     ? "No devices found. Enable “Show this iPad when on Wi-Fi” in Finder."

@@ -5,10 +5,11 @@ struct DeskboardApp: App {
     var body: some Scene {
         WindowGroup {
             DashboardView()
-                .frame(minWidth: 980, minHeight: 640)
+                .frame(minWidth: 880, minHeight: 540)
         }
-        // Default size matches an 11" iPad in Sidecar (~1180×820 pt).
-        .defaultSize(width: 1180, height: 800)
+        // Compact default: fits below the menu bar without touching the Dock;
+        // in Sidecar fullscreen it simply scales up.
+        .defaultSize(width: 1080, height: 660)
         .windowResizability(.contentMinSize)
 
         Settings {

@@ -4,7 +4,7 @@ struct GitHubWidget: View {
     @State private var service = GitHubService()
 
     var body: some View {
-        WidgetCard("GitHub") {
+        WidgetCard("GitHub", tint: Theme.tintGitHub) {
             content
         }
         .task {
@@ -19,7 +19,7 @@ struct GitHubWidget: View {
     @ViewBuilder
     private var content: some View {
         if !service.configured {
-            WidgetPlaceholder(text: "Configure token in Settings")
+            WidgetPlaceholder(text: "No GitHub token — sign in with the gh CLI or add one in Settings")
         } else if let error = service.error, service.events.isEmpty && service.openPRs.isEmpty {
             WidgetPlaceholder(text: error)
         } else {
