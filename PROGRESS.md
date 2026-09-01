@@ -6,15 +6,17 @@
 
 ## Aktueller Stand (1.9.2026)
 
-**GitHub-Widget „No open PRs" — Ursache gefunden (1.9.2026, PR #1):** Die Widget-Query
-selbst ist korrekt (mit dem gh-CLI-Token liefert sie die offenen PRs). Der Settings-Token
-im Keychain hat aber Vorrang und sieht offenbar keine privaten Repos (fehlender
-`repo`-Scope → HTTP 200 mit leerem Ergebnis, kein Fehler). Fix auf Branch
-`github-widget-scope-hint` (PR #1): `X-OAuth-Scopes`-Header wird ausgewertet, im
-Leerzustand erscheint jetzt ein Hinweis statt „No open PRs or recent activity".
-**Manuell nötig:** Settings → GitHub-Token leeren (dann greift der gh-CLI-Fallback)
-oder durch einen Token mit `repo`-Scope ersetzen; App neu starten. PR #1 dient
-zugleich als Live-Testdatensatz für die PR-Anzeige.
+**GitHub-Widget „No open PRs" — gelöst (1.9.2026, PR #1):** Die Widget-Query selbst war
+korrekt. Ursache: Der Settings-Token im Keychain (classic PAT `ghp_`, hat sogar
+`repo`-Scope) hat Vorrang, sieht aber 0 PRs/0 Events — er gehört sehr wahrscheinlich zum
+falschen GitHub-Account (vermutlich `poddie-box` statt `maaxvogt`); GitHub antwortet
+dann mit HTTP 200 und leeren Listen, kein Fehler. Fix auf Branch
+`github-widget-scope-hint` (PR #1): (a) Liefert der Settings-Token nichts, fällt das
+Widget automatisch auf den gh-CLI-Token zurück; (b) `X-OAuth-Scopes`-Check mit
+Hinweis-Platzhalter statt stummem „No open PRs"; (c) os_log-Diagnose
+(`/usr/bin/log show --predicate 'subsystem == "com.maxvogt.deskboard"'`).
+Live verifiziert: Widget zeigt nach Fallback 2 PRs + 8 Events. PR #1 dient zugleich
+als Testdatensatz. **Empfehlung:** den falschen Token in den Settings trotzdem leeren.
 
 **Fixes 1.9.2026:** GitHub-Widget zeigte nichts an — die GitHub-Events-API liefert bei
 PushEvents kein `commits`-Feld mehr im Payload, dadurch wurden alle Push-Events als „leer"

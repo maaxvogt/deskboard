@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 struct GitHubPR: Identifiable {
     let id: Int
@@ -26,36 +27,72 @@ final class GitHubService {
     private(set) var scopeHint: String?
 
     private var cachedCLIToken: String?
+    private let log = Logger(subsystem: "com.maxvogt.deskboard", category: "github")
 
     func refresh() async {
         let settings = AppSettings.shared
-        guard let token = resolveToken(), !settings.githubUser.isEmpty else {
+        let settingsToken = settings.githubToken.isEmpty ? nil : settings.githubToken
+        let cliToken = cliToken()
+        guard let token = settingsToken ?? cliToken, !settings.githubUser.isEmpty else {
             configured = false
             return
         }
         configured = true
         do {
-            async let prs = fetchOpenPRs(user: settings.githubUser, token: token)
-            async let evts = fetchEvents(user: settings.githubUser, token: token)
-            let (prList, seesPrivateRepos) = try await prs
-            openPRs = prList
-            events = try await evts
+            var result = try await fetchAll(user: settings.githubUser, token: token)
+            log.notice("""
+                refresh via \(settingsToken != nil ? "settings" : "cli", privacy: .public) token \
+                (\(Self.tokenKind(token), privacy: .public)): \(result.prs.count) PRs, \
+                \(result.events.count) events, repo scope: \
+                \(result.seesPrivateRepos.map(String.init) ?? "unknown", privacy: .public)
+                """)
+            // A Settings token without access to private repos gets HTTP 200 and
+            // empty lists; retry once with the gh CLI login before showing nothing.
+            if result.prs.isEmpty && result.events.isEmpty,
+               settingsToken != nil, let cliToken, cliToken != settingsToken,
+               let retry = try? await fetchAll(user: settings.githubUser, token: cliToken),
+               !(retry.prs.isEmpty && retry.events.isEmpty) {
+                result = retry
+                log.notice("settings token returned nothing — using gh CLI token instead: \(retry.prs.count) PRs, \(retry.events.count) events")
+            }
+            openPRs = result.prs
+            events = result.events
             error = nil
-            scopeHint = seesPrivateRepos == false
-                ? "Token lacks the 'repo' scope — PRs in private repos are hidden. "
+            if result.seesPrivateRepos == false {
+                scopeHint = "Token lacks the 'repo' scope — PRs in private repos are hidden. "
                     + "Clear the token in Settings to use the gh CLI login instead."
-                : nil
+            } else if result.prs.isEmpty && result.events.isEmpty && settingsToken != nil {
+                scopeHint = "Nothing visible with the Settings token — it may lack access "
+                    + "to your repos. Clear it in Settings to use the gh CLI login."
+            } else {
+                scopeHint = nil
+            }
         } catch let apiError as GitHubAPIError {
             self.error = apiError.message
+            log.notice("refresh failed: \(apiError.message, privacy: .public)")
         } catch {
             self.error = "GitHub unreachable"
+            log.notice("refresh failed: \(error, privacy: .public)")
         }
     }
 
-    /// Settings token first; otherwise borrow the local `gh` CLI login.
-    private func resolveToken() -> String? {
-        let fromSettings = AppSettings.shared.githubToken
-        if !fromSettings.isEmpty { return fromSettings }
+    private func fetchAll(
+        user: String, token: String
+    ) async throws -> (prs: [GitHubPR], events: [GitHubEvent], seesPrivateRepos: Bool?) {
+        async let prs = fetchOpenPRs(user: user, token: token)
+        async let evts = fetchEvents(user: user, token: token)
+        let (prList, seesPrivateRepos) = try await prs
+        return (prList, try await evts, seesPrivateRepos)
+    }
+
+    /// Token type by prefix ("gho_" = OAuth/CLI, "ghp_" = classic PAT,
+    /// "gith" = fine-grained PAT). Never logs the token itself.
+    private static func tokenKind(_ token: String) -> String {
+        String(token.prefix(4))
+    }
+
+    /// Borrow the local `gh` CLI login.
+    private func cliToken() -> String? {
         if let cached = cachedCLIToken { return cached }
         for ghPath in ["/opt/homebrew/bin/gh", "/usr/local/bin/gh"]
         where FileManager.default.isExecutableFile(atPath: ghPath) {
