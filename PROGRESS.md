@@ -18,6 +18,18 @@ Hinweis-Platzhalter statt stummem „No open PRs"; (c) os_log-Diagnose
 Live verifiziert: Widget zeigt nach Fallback 2 PRs + 8 Events. PR #1 dient zugleich
 als Testdatensatz. **Empfehlung:** den falschen Token in den Settings trotzdem leeren.
 
+**Reminders „inTouch error 500" (1.9.2026):** Nicht reproduzierbar — nach App-Neustart
+liefen Areas-/Items-Polls über mehrere Zyklen fehlerfrei; sehr wahrscheinlich ein
+transienter D1/Worker-Fehler, der genau den ERSTEN Refresh nach Neustart traf (der
+Fehler-Platzhalter steht dann bis zum nächsten 60s-Poll). Wrangler war zudem wieder
+auf `max.vogt@quietoffice.de` eingeloggt (Worker liegt auf `mavoxgt@gmail.com`) →
+kein `wrangler tail` möglich. Vorsorge im Widget: (a) InTouchClient loggt Fehler-Bodies
+nach os_log (Kategorie `intouch`) und zeigt die Server-Fehlermeldung statt nur
+„inTouch error 500"; (b) PATCH-Fehler (z.B. 404 nach ID-Churn durch App-Snapshot-Push,
+live beobachtet bei Item 32) lösen jetzt ein Items-Resync aus statt nur Rollback.
+**Merker Backend-Repo:** `reminders.js` + `api_reminders.sql` sind dort noch
+UNTRACKED (deployt wurde aus dem Working Tree) — committen!
+
 **Fixes 1.9.2026:** GitHub-Widget zeigte nichts an — die GitHub-Events-API liefert bei
 PushEvents kein `commits`-Feld mehr im Payload, dadurch wurden alle Push-Events als „leer"
 rausgefiltert. Fix: Fallback auf Branch-Name („Pushed to main") via `payload.ref`; zusätzlich
