@@ -22,6 +22,8 @@ final class GitHubService {
     private(set) var events: [GitHubEvent] = []
     private(set) var error: String?
     private(set) var configured = false
+    /// Set when the active token provably cannot see private repos (missing `repo` scope).
+    private(set) var scopeHint: String?
 
     private var cachedCLIToken: String?
 
@@ -35,9 +37,14 @@ final class GitHubService {
         do {
             async let prs = fetchOpenPRs(user: settings.githubUser, token: token)
             async let evts = fetchEvents(user: settings.githubUser, token: token)
-            openPRs = try await prs
+            let (prList, seesPrivateRepos) = try await prs
+            openPRs = prList
             events = try await evts
             error = nil
+            scopeHint = seesPrivateRepos == false
+                ? "Token lacks the 'repo' scope — PRs in private repos are hidden. "
+                    + "Clear the token in Settings to use the gh CLI login instead."
+                : nil
         } catch let apiError as GitHubAPIError {
             self.error = apiError.message
         } catch {
@@ -90,11 +97,22 @@ final class GitHubService {
         }
     }
 
-    private func fetchOpenPRs(user: String, token: String) async throws -> [GitHubPR] {
+    /// `seesPrivateRepos` is nil when the token type does not report scopes
+    /// (fine-grained PATs send no `X-OAuth-Scopes` header).
+    private func fetchOpenPRs(
+        user: String, token: String
+    ) async throws -> (prs: [GitHubPR], seesPrivateRepos: Bool?) {
         let query = "is:pr+is:open+author:\(user)"
         let (data, response) = try await URLSession.shared.data(
             for: request("/search/issues?q=\(query)&sort=updated&per_page=6", token: token))
         try check(response)
+        var seesPrivateRepos: Bool?
+        if let scopes = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-OAuth-Scopes") {
+            seesPrivateRepos = scopes
+                .components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .contains("repo")
+        }
 
         struct SearchResult: Decodable {
             struct Item: Decodable {
@@ -107,7 +125,7 @@ final class GitHubService {
             let items: [Item]
         }
         let result = try JSONDecoder().decode(SearchResult.self, from: data)
-        return result.items.map {
+        let prs = result.items.map {
             GitHubPR(
                 id: $0.id,
                 title: $0.title,
@@ -116,6 +134,7 @@ final class GitHubService {
                 updated: ISO8601DateFormatter().date(from: $0.updated_at)
             )
         }
+        return (prs, seesPrivateRepos)
     }
 
     private func fetchEvents(user: String, token: String) async throws -> [GitHubEvent] {

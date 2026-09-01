@@ -23,7 +23,7 @@ struct GitHubWidget: View {
         } else if let error = service.error, service.events.isEmpty && service.openPRs.isEmpty {
             WidgetPlaceholder(text: error)
         } else if service.events.isEmpty && service.openPRs.isEmpty {
-            WidgetPlaceholder(text: "No open PRs or recent activity")
+            WidgetPlaceholder(text: service.scopeHint ?? "No open PRs or recent activity")
         } else {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 4) {
