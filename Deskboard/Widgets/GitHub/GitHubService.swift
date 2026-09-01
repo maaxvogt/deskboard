@@ -130,6 +130,7 @@ final class GitHubService {
                 let commits: [Commit]?
                 let action: String?
                 let ref_type: String?
+                let ref: String?
             }
             let id: String
             let type: String
@@ -144,9 +145,16 @@ final class GitHubService {
             let text: String?
             switch event.type {
             case "PushEvent":
+                // The events API no longer ships commit messages in the payload;
+                // fall back to the branch name when they are absent.
                 let count = event.payload.commits?.count ?? 0
                 let first = event.payload.commits?.first?.message.components(separatedBy: "\n").first ?? ""
-                text = count > 1 ? "\(count) commits — \(first)" : first
+                if first.isEmpty {
+                    let branch = event.payload.ref?.components(separatedBy: "refs/heads/").last ?? ""
+                    text = branch.isEmpty ? "Pushed" : "Pushed to \(branch)"
+                } else {
+                    text = count > 1 ? "\(count) commits — \(first)" : first
+                }
             case "PullRequestEvent":
                 text = "PR \(event.payload.action ?? "")"
             case "CreateEvent":

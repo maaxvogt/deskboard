@@ -4,10 +4,18 @@
 
 ---
 
-## Aktueller Stand (31.8.2026)
+## Aktueller Stand (1.9.2026)
 
-Erste Session: App steht komplett als lokaler Debug-Build, alle 8 Widgets implementiert,
-Build grün. Repo `maaxvogt/deskboard` (privat).
+**Fixes 1.9.2026:** GitHub-Widget zeigte nichts an — die GitHub-Events-API liefert bei
+PushEvents kein `commits`-Feld mehr im Payload, dadurch wurden alle Push-Events als „leer"
+rausgefiltert. Fix: Fallback auf Branch-Name („Pushed to main") via `payload.ref`; zusätzlich
+Platzhalter statt leerer Karte, wenn weder PRs noch Events da sind. Uhr-Widget: Minuten jetzt
+immer zweistellig (`.minute(.twoDigits)`, „09:05" statt „09:5"). Gegen Live-API-Daten
+verifiziert, Build grün. Hinweis: Im Keychain liegt ein `githubToken` (Settings), der Vorrang
+vor dem gh-CLI-Token hat — falls das Widget einen Token-Fehler zeigt, den in den Settings leeren.
+
+Erste Session (31.8.2026): App steht komplett als lokaler Debug-Build, alle 8 Widgets
+implementiert, Build grün. Repo `maaxvogt/deskboard` (privat).
 
 **Offen / Blocker:**
 

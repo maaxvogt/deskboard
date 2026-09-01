@@ -8,7 +8,7 @@ struct ClockWeatherWidget: View {
             VStack(alignment: .leading, spacing: 12) {
                 TimelineView(.everyMinute) { context in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(context.date, format: .dateTime.hour(.twoDigits(amPM: .omitted)).minute())
+                        Text(context.date, format: .dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
                             .font(Theme.numeral(54))
                             .foregroundStyle(Theme.text)
                         Text(context.date, format: .dateTime.weekday(.wide).day().month(.wide))
