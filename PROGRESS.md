@@ -6,6 +6,16 @@
 
 ## Aktueller Stand (1.9.2026)
 
+**GitHub-Widget „No open PRs" — Ursache gefunden (1.9.2026, PR #1):** Die Widget-Query
+selbst ist korrekt (mit dem gh-CLI-Token liefert sie die offenen PRs). Der Settings-Token
+im Keychain hat aber Vorrang und sieht offenbar keine privaten Repos (fehlender
+`repo`-Scope → HTTP 200 mit leerem Ergebnis, kein Fehler). Fix auf Branch
+`github-widget-scope-hint` (PR #1): `X-OAuth-Scopes`-Header wird ausgewertet, im
+Leerzustand erscheint jetzt ein Hinweis statt „No open PRs or recent activity".
+**Manuell nötig:** Settings → GitHub-Token leeren (dann greift der gh-CLI-Fallback)
+oder durch einen Token mit `repo`-Scope ersetzen; App neu starten. PR #1 dient
+zugleich als Live-Testdatensatz für die PR-Anzeige.
+
 **Fixes 1.9.2026:** GitHub-Widget zeigte nichts an — die GitHub-Events-API liefert bei
 PushEvents kein `commits`-Feld mehr im Payload, dadurch wurden alle Push-Events als „leer"
 rausgefiltert. Fix: Fallback auf Branch-Name („Pushed to main") via `payload.ref`; zusätzlich
