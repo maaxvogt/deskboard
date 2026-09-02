@@ -31,6 +31,12 @@ final class AppSettings {
     // MARK: Weather
     var weatherPlace: String { didSet { UserDefaults.standard.set(weatherPlace, forKey: "weatherPlace") } }
 
+    // MARK: Appearance / window
+    var appearance: Appearance { didSet { UserDefaults.standard.set(appearance.rawValue, forKey: "appearance") } }
+    var startFullScreen: Bool { didSet { UserDefaults.standard.set(startFullScreen, forKey: "startFullScreen") } }
+    /// Display the dashboard was last moved to (NSScreenNumber as string).
+    var lastDisplayID: String? { didSet { UserDefaults.standard.set(lastDisplayID, forKey: "lastDisplayID") } }
+
     private init() {
         let d = UserDefaults.standard
         claudeAPIBase = d.string(forKey: "claudeAPIBase") ?? "https://claude-status-api.mavoxgt.workers.dev"
@@ -46,6 +52,9 @@ final class AppSettings {
         inTouchAPIBase = d.string(forKey: "inTouchAPIBase") ?? "https://intouch-backend.mavoxgt.workers.dev"
         inTouchKey = KeychainHelper.get("inTouchKey") ?? ""
         weatherPlace = d.string(forKey: "weatherPlace") ?? ""
+        appearance = d.string(forKey: "appearance").flatMap(Appearance.init(rawValue:)) ?? .auto
+        startFullScreen = d.object(forKey: "startFullScreen") as? Bool ?? true
+        lastDisplayID = d.string(forKey: "lastDisplayID")
     }
 
     private static func claudeTokenFromClaudeSettings() -> String? {

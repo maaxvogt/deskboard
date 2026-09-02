@@ -1,12 +1,16 @@
 import SwiftUI
 
-/// Shared card chrome for every widget: tinted surface (no border), title row
-/// in the widget's accent color, consistent padding.
+/// Shared card chrome for every widget: title row in the widget's accent color,
+/// consistent padding, and a surface that depends on the appearance:
+/// - light / dark: pressed into the ground (inner shadows, same colour as background)
+/// - darkColor: the widget's tinted surface, no border
 struct WidgetCard<Content: View, Accessory: View>: View {
     let title: String
     let tint: Theme.Tint
     @ViewBuilder var content: Content
     @ViewBuilder var accessory: Accessory
+
+    @Environment(\.colorScheme) private var colorScheme
 
     init(_ title: String,
          tint: Theme.Tint = Theme.tintNeutral,
@@ -33,8 +37,23 @@ struct WidgetCard<Content: View, Accessory: View>: View {
         }
         .padding(Theme.cardPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(tint.surface)
+        .background(surface)
         .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+    }
+
+    @ViewBuilder private var surface: some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+        let mode = Theme.mode(for: colorScheme)
+        switch mode {
+        case .light, .dark:
+            shape.fill(
+                Theme.card
+                    .shadow(.inner(color: Theme.insetShade(for: mode), radius: 6, x: 3, y: 3))
+                    .shadow(.inner(color: Theme.insetLight(for: mode), radius: 6, x: -3, y: -3))
+            )
+        case .darkColor:
+            shape.fill(tint.surface)
+        }
     }
 }
 

@@ -4,7 +4,30 @@
 
 ---
 
-## Aktueller Stand (1.9.2026)
+## Aktueller Stand (2.9.2026)
+
+**PR #1 (Widget-Fixes vom 1.9.) am 2.9.2026 in main gemergt.**
+
+**Appearance-Redesign (2.9.2026, Branch `appearance-fullscreen`, PR #2):** Drei Modi in Settings → General → „Appearance":
+**Auto** (System hell → Light, dunkel → Dark Color), **Light** (Soft-UI: einheitliche
+graue Fläche `#DDE1E7`, Karten mit Inner-Shadow in den Hintergrund „gedrückt", Inhalt
+flach, Titel farbig), **Dark** (dieselbe Inset-Technik auf dunkelgrauer Fläche `#1C1C20`,
+Titel farbig, keine Kanten), **Dark Color** (der bisherige getönte Look, unverändert). Umsetzung: Tokens in
+`Theme.swift` sind computed und lesen `AppSettings.appearance`; Karten-Chrome in
+`WidgetCard.surface` per `Theme.mode(for: colorScheme)`; `preferredColorScheme` auf
+Dashboard + Settings. Alle vier Zustände per Snapshot verifiziert (Debug-Hook
+`Deskboard --snapshot=/pfad.png`, s. CLAUDE.md), Build grün.
+
+**Vollbild + Display-Wechsel (2.9.2026, ebenfalls PR #2):** `Support/WindowManager.swift`
+bekommt das NSWindow über `WindowAccessor` (im Hintergrund der DashboardView). Natives
+macOS-Vollbild automatisch beim Start (Settings → General „Start in full screen“,
+Default an). Display wechseln: Settings → General „Display“-Picker oder View →
+„Move to Next Display“ (⇧⌘M); Ablauf leave → setFrame → re-enter, weil ein
+Vollbild-Fenster nicht direkt verschiebbar ist. Das zuletzt gewählte Display wird als
+`lastDisplayID` gemerkt (SwiftUIs Frame-Restore vergisst es sonst; live beobachtet).
+Verifiziert über drei Displays (2× BenQ, Sidecar) per `--snapshot … --move-next` und
+os_log-Kategorie `window` (`log show --info` nötig, sonst fehlen die Info-Zeilen).
+
 
 **GitHub-Widget „No open PRs" — gelöst (1.9.2026, PR #1):** Die Widget-Query selbst war
 korrekt. Ursache: Der Settings-Token im Keychain (classic PAT `ghp_`, hat sogar

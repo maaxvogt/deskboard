@@ -1,68 +1,124 @@
 import SwiftUI
 
+/// The user-selectable appearance. `auto` follows the system: light → `.light`,
+/// dark → `.darkColor` (the tinted look).
+enum Appearance: String, CaseIterable, Identifiable {
+    case auto, light, dark, darkColor
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .auto: "Auto"
+        case .light: "Light"
+        case .dark: "Dark"
+        case .darkColor: "Dark Color"
+        }
+    }
+}
+
 /// Central design tokens. Plain, professional, no decoration for its own sake.
-/// Everything adapts to light/dark via dynamic NSColor providers.
+///
+/// Three palettes:
+/// - **light**: soft-UI. One uniform grey surface; cards are pressed *into* the
+///   background with inner shadows, content stays flat.
+/// - **dark**: the same soft-UI in dark grey. Cards share the ground colour and are
+///   pressed in with inner shadows; no borders.
+/// - **darkColor**: the tinted look — every widget on its own quietly coloured surface.
+///
+/// Tokens are computed so they follow `AppSettings.shared.appearance`; SwiftUI
+/// tracks that access and re-renders on change. In `auto` the colours are
+/// dynamic NSColors that resolve per window appearance.
 enum Theme {
+
+    enum Mode { case light, dark, darkColor }
+
+    /// The pinned mode, or nil when following the system.
+    static var fixedMode: Mode? {
+        switch AppSettings.shared.appearance {
+        case .auto: nil
+        case .light: .light
+        case .dark: .dark
+        case .darkColor: .darkColor
+        }
+    }
+
+    /// Color scheme to force on windows (nil = system).
+    static var colorScheme: ColorScheme? {
+        switch fixedMode {
+        case .light: .light
+        case .dark, .darkColor: .dark
+        case nil: nil
+        }
+    }
+
+    /// Resolves the effective mode given the window's color scheme.
+    static func mode(for scheme: ColorScheme) -> Mode {
+        fixedMode ?? (scheme == .dark ? .darkColor : .light)
+    }
 
     // MARK: Colors
 
     /// Window background behind all cards.
-    static let background = dynamic(light: NSColor(hex: 0xEBECEF), dark: NSColor(hex: 0x101013))
-    /// Neutral card surface (fallback when a widget has no tint).
-    static let card = dynamic(light: NSColor(hex: 0xFFFFFF), dark: NSColor(hex: 0x1C1C21))
+    static var background: Color { color(light: 0xDDE1E7, dark: 0x1C1C20, darkColor: 0x101013) }
+    /// Neutral card surface. In light and dark this equals the background — the
+    /// inner shadow alone separates card from ground.
+    static var card: Color { color(light: 0xDDE1E7, dark: 0x1C1C20, darkColor: 0x1C1C21) }
     /// Hairline for separators inside cards.
-    static let border = dynamic(light: NSColor(hex: 0xDDDDE2), dark: NSColor(hex: 0x2A2A31))
+    static var border: Color { color(light: 0xC6CAD3, dark: 0x2C2C32, darkColor: 0x2A2A31) }
     /// Primary text.
-    static let text = dynamic(light: NSColor(hex: 0x1B1B1F), dark: NSColor(hex: 0xEBEBEF))
+    static var text: Color { color(light: 0x3A3A44, dark: 0xE8E8EC, darkColor: 0xEBEBEF) }
     /// Secondary / muted text.
-    static let muted = dynamic(light: NSColor(hex: 0x70707A), dark: NSColor(hex: 0x94949E))
+    static var muted: Color { color(light: 0x6E6E78, dark: 0x8E8E98, darkColor: 0x94949E) }
     /// Faint text (timestamps, tertiary info).
-    static let faint = dynamic(light: NSColor(hex: 0xA0A0AA), dark: NSColor(hex: 0x64646E))
+    static var faint: Color { color(light: 0x9A9AA6, dark: 0x5E5E68, darkColor: 0x64646E) }
     /// Subtle accent — steel blue, used sparingly.
-    static let accent = dynamic(light: NSColor(hex: 0x3D6BB3), dark: NSColor(hex: 0x6E97D4))
-    /// Subtle fill for rows/badges.
-    static let fill = dynamic(light: NSColor(hex: 0xF4F4F6), dark: NSColor(hex: 0x26262C))
+    static var accent: Color { color(light: 0x3D6BB3, dark: 0x8FA8C8, darkColor: 0x6E97D4) }
+    /// Subtle fill for rows/badges/bar tracks.
+    static var fill: Color { color(light: 0xD1D5DD, dark: 0x27272C, darkColor: 0x26262C) }
 
     // Status colors (muted, not neon)
-    static let ok = dynamic(light: NSColor(hex: 0x2E7D4F), dark: NSColor(hex: 0x5DB884))
-    static let warn = dynamic(light: NSColor(hex: 0xB07A1E), dark: NSColor(hex: 0xD9A84E))
-    static let bad = dynamic(light: NSColor(hex: 0xB3402E), dark: NSColor(hex: 0xD4705F))
-    static let info = dynamic(light: NSColor(hex: 0x3D6BB3), dark: NSColor(hex: 0x6E97D4))
+    static var ok: Color { color(light: 0x2E7D4F, dark: 0x5DB884, darkColor: 0x5DB884) }
+    static var warn: Color { color(light: 0xB07A1E, dark: 0xD9A84E, darkColor: 0xD9A84E) }
+    static var bad: Color { color(light: 0xB3402E, dark: 0xD4705F, darkColor: 0xD4705F) }
+    static var info: Color { color(light: 0x3D6BB3, dark: 0x8FA8C8, darkColor: 0x6E97D4) }
+
+    // MARK: Soft-UI shadows (pressed cards in light and dark)
+
+    /// Dark edge of a pressed surface (top-left inside).
+    static func insetShade(for mode: Mode) -> Color {
+        mode == .light ? Color(nsColor: NSColor(hex: 0xB8BCC8)) : Color.black.opacity(0.75)
+    }
+    /// Light edge of a pressed surface (bottom-right inside).
+    static func insetLight(for mode: Mode) -> Color {
+        mode == .light ? Color.white.opacity(0.75) : Color.white.opacity(0.09)
+    }
 
     // MARK: Widget tints
-    // Each widget gets its own quietly tinted surface (instead of borders) and
-    // a matching accent for its title. Muted hues — color, not carnival.
+    // In darkColor each widget gets its own quietly tinted surface (instead of
+    // borders) and a matching accent for its title. In light and dark the
+    // surface is the neutral card; only the accent survives.
 
     struct Tint {
         let surface: Color
         let accent: Color
     }
 
-    static let tintToday = Tint(
-        surface: dynamic(light: NSColor(hex: 0xE7EEF8), dark: NSColor(hex: 0x1C2634)),
-        accent: dynamic(light: NSColor(hex: 0x3D6BB3), dark: NSColor(hex: 0x82A8DE)))
-    static let tintSystem = Tint(
-        surface: dynamic(light: NSColor(hex: 0xE3F0ED), dark: NSColor(hex: 0x172725)),
-        accent: dynamic(light: NSColor(hex: 0x2E7D74), dark: NSColor(hex: 0x6FBDB2)))
-    static let tintBattery = Tint(
-        surface: dynamic(light: NSColor(hex: 0xE7F2E7), dark: NSColor(hex: 0x1B2A1C)),
-        accent: dynamic(light: NSColor(hex: 0x2E7D4F), dark: NSColor(hex: 0x6FBE8E)))
-    static let tintClaude = Tint(
-        surface: dynamic(light: NSColor(hex: 0xECEAF8), dark: NSColor(hex: 0x232136)),
-        accent: dynamic(light: NSColor(hex: 0x5B54B0), dark: NSColor(hex: 0x9D96DF)))
-    static let tintCalendar = Tint(
-        surface: dynamic(light: NSColor(hex: 0xF8ECEB), dark: NSColor(hex: 0x2D2022)),
-        accent: dynamic(light: NSColor(hex: 0xB04A44), dark: NSColor(hex: 0xD98A82)))
-    static let tintReminders = Tint(
-        surface: dynamic(light: NSColor(hex: 0xF7F0E0), dark: NSColor(hex: 0x2B2518)),
-        accent: dynamic(light: NSColor(hex: 0xA87A1C), dark: NSColor(hex: 0xD3A94E)))
-    static let tintMail = Tint(
-        surface: dynamic(light: NSColor(hex: 0xE4F0F7), dark: NSColor(hex: 0x1A2733)),
-        accent: dynamic(light: NSColor(hex: 0x3577A8), dark: NSColor(hex: 0x7FB2D9)))
-    static let tintGitHub = Tint(
-        surface: dynamic(light: NSColor(hex: 0xEEEDF3), dark: NSColor(hex: 0x25242C)),
-        accent: dynamic(light: NSColor(hex: 0x63637A), dark: NSColor(hex: 0xA2A2B5)))
-    static let tintNeutral = Tint(surface: card, accent: muted)
+    static var tintToday: Tint { tint(surface: 0x1C2634, light: 0x3D6BB3, dark: 0x82A8DE) }
+    static var tintSystem: Tint { tint(surface: 0x172725, light: 0x2E7D74, dark: 0x6FBDB2) }
+    static var tintBattery: Tint { tint(surface: 0x1B2A1C, light: 0x2E7D4F, dark: 0x6FBE8E) }
+    static var tintClaude: Tint { tint(surface: 0x232136, light: 0x5B54B0, dark: 0x9D96DF) }
+    static var tintCalendar: Tint { tint(surface: 0x2D2022, light: 0xB04A44, dark: 0xD98A82) }
+    static var tintReminders: Tint { tint(surface: 0x2B2518, light: 0xA87A1C, dark: 0xD3A94E) }
+    static var tintMail: Tint { tint(surface: 0x1A2733, light: 0x3577A8, dark: 0x7FB2D9) }
+    static var tintGitHub: Tint { tint(surface: 0x25242C, light: 0x63637A, dark: 0xA2A2B5) }
+    static var tintNeutral: Tint { Tint(surface: card, accent: muted) }
+
+    private static func tint(surface darkColorSurface: UInt32, light: UInt32, dark: UInt32) -> Tint {
+        Tint(
+            surface: color(light: 0xDDE1E7, dark: 0x1C1C20, darkColor: darkColorSurface),
+            accent: color(light: light, dark: dark, darkColor: dark))
+    }
 
     // MARK: Typography
 
@@ -83,6 +139,17 @@ enum Theme {
     static let cardRadius: CGFloat = 10
     static let cardPadding: CGFloat = 14
     static let gridSpacing: CGFloat = 12
+
+    // MARK: Resolution
+
+    private static func color(light: UInt32, dark: UInt32, darkColor: UInt32) -> Color {
+        switch fixedMode {
+        case .light: Color(nsColor: NSColor(hex: light))
+        case .dark: Color(nsColor: NSColor(hex: dark))
+        case .darkColor: Color(nsColor: NSColor(hex: darkColor))
+        case nil: dynamic(light: NSColor(hex: light), dark: NSColor(hex: darkColor))
+        }
+    }
 
     private static func dynamic(light: NSColor, dark: NSColor) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in

@@ -33,6 +33,8 @@ struct DashboardView: View {
         }
         .padding(Theme.gridSpacing)
         .background(Theme.background)
+        .background(WindowAccessor())
+        .preferredColorScheme(Theme.colorScheme)
     }
 }
 

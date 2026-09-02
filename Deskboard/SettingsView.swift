@@ -13,6 +13,7 @@ struct SettingsView: View {
         }
         .frame(width: 460)
         .padding(.bottom, 4)
+        .preferredColorScheme(Theme.colorScheme)
     }
 
     private var claudeTab: some View {
@@ -60,9 +61,33 @@ struct SettingsView: View {
         .padding(20)
     }
 
+    private var windows: WindowManager { WindowManager.shared }
+
+    private var displaySelection: Binding<String> {
+        Binding(
+            get: { windows.currentScreen?.id ?? "" },
+            set: { id in
+                if let screen = windows.screens.first(where: { $0.id == id }) { windows.move(to: screen) }
+            })
+    }
+
     private var generalTab: some View {
         Form {
             TextField("Weather location (city)", text: $settings.weatherPlace)
+            Picker("Appearance", selection: $settings.appearance) {
+                ForEach(Appearance.allCases) { Text($0.title).tag($0) }
+            }
+            Text("Auto follows the system: Light when macOS is light, Dark Color when it is dark.")
+                .font(Theme.caption)
+                .foregroundStyle(Theme.muted)
+
+            Toggle("Start in full screen", isOn: $settings.startFullScreen)
+            Picker("Display", selection: displaySelection) {
+                ForEach(windows.screens) { Text($0.localizedName).tag($0.id) }
+            }
+            Text("Moves the dashboard to that display and keeps it in full screen. Shortcut: ⇧⌘M cycles displays.")
+                .font(Theme.caption)
+                .foregroundStyle(Theme.muted)
         }
         .padding(20)
     }
