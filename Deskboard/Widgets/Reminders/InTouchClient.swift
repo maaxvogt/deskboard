@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 // Mirrors the inTouch reminders addon (backend/src/api/addons/reminders.js):
 // plaintext mirror of reminder areas the user exposed per-area in the app.
@@ -36,6 +37,8 @@ final class InTouchClient {
 
     struct APIStatusError: Error { let message: String }
 
+    private let log = Logger(subsystem: "com.maxvogt.deskboard", category: "intouch")
+
     private func request(_ path: String, method: String = "GET", body: [String: Any]? = nil) async throws -> Data {
         let settings = AppSettings.shared
         guard let url = URL(string: settings.inTouchAPIBase + path) else { throw URLError(.badURL) }
@@ -49,9 +52,17 @@ final class InTouchClient {
         let (data, response) = try await URLSession.shared.data(for: request)
         switch (response as? HTTPURLResponse)?.statusCode ?? 200 {
         case 200...299: break
-        case 401, 403: throw APIStatusError(message: "API key rejected — check Settings")
-        case 404: throw APIStatusError(message: "Reminders addon not available yet on the backend")
-        case let status: throw APIStatusError(message: "inTouch error \(status)")
+        case let status:
+            // Error bodies are JSON without user content — safe to log verbatim.
+            let bodyText = String(decoding: data.prefix(500), as: UTF8.self)
+            log.notice("\(method, privacy: .public) \(path, privacy: .public) -> \(status): \(bodyText, privacy: .public)")
+            let serverMessage = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+                .flatMap { $0["error"] as? String }
+            switch status {
+            case 401, 403: throw APIStatusError(message: "API key rejected — check Settings")
+            case 404: throw APIStatusError(message: "Reminders addon not available yet on the backend")
+            default: throw APIStatusError(message: serverMessage ?? "inTouch error \(status)")
+            }
         }
         return data
     }
@@ -110,6 +121,9 @@ final class InTouchClient {
             if let idx = items.firstIndex(where: { $0.id == item.id }) {
                 items[idx].done = !done
             }
+            // Item IDs churn when the app pushes a fresh snapshot; a 404 here
+            // usually means our list is stale — resync instead of just rolling back.
+            await loadItems()
         }
     }
 

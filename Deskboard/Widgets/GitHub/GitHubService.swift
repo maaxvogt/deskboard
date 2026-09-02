@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 struct GitHubPR: Identifiable {
     let id: Int
@@ -22,33 +23,76 @@ final class GitHubService {
     private(set) var events: [GitHubEvent] = []
     private(set) var error: String?
     private(set) var configured = false
+    /// Set when the active token provably cannot see private repos (missing `repo` scope).
+    private(set) var scopeHint: String?
 
     private var cachedCLIToken: String?
+    private let log = Logger(subsystem: "com.maxvogt.deskboard", category: "github")
 
     func refresh() async {
         let settings = AppSettings.shared
-        guard let token = resolveToken(), !settings.githubUser.isEmpty else {
+        let settingsToken = settings.githubToken.isEmpty ? nil : settings.githubToken
+        let cliToken = cliToken()
+        guard let token = settingsToken ?? cliToken, !settings.githubUser.isEmpty else {
             configured = false
             return
         }
         configured = true
         do {
-            async let prs = fetchOpenPRs(user: settings.githubUser, token: token)
-            async let evts = fetchEvents(user: settings.githubUser, token: token)
-            openPRs = try await prs
-            events = try await evts
+            var result = try await fetchAll(user: settings.githubUser, token: token)
+            log.notice("""
+                refresh via \(settingsToken != nil ? "settings" : "cli", privacy: .public) token \
+                (\(Self.tokenKind(token), privacy: .public)): \(result.prs.count) PRs, \
+                \(result.events.count) events, repo scope: \
+                \(result.seesPrivateRepos.map(String.init) ?? "unknown", privacy: .public)
+                """)
+            // A Settings token without access to private repos gets HTTP 200 and
+            // empty lists; retry once with the gh CLI login before showing nothing.
+            if result.prs.isEmpty && result.events.isEmpty,
+               settingsToken != nil, let cliToken, cliToken != settingsToken,
+               let retry = try? await fetchAll(user: settings.githubUser, token: cliToken),
+               !(retry.prs.isEmpty && retry.events.isEmpty) {
+                result = retry
+                log.notice("settings token returned nothing — using gh CLI token instead: \(retry.prs.count) PRs, \(retry.events.count) events")
+            }
+            openPRs = result.prs
+            events = result.events
             error = nil
+            if result.seesPrivateRepos == false {
+                scopeHint = "Token lacks the 'repo' scope — PRs in private repos are hidden. "
+                    + "Clear the token in Settings to use the gh CLI login instead."
+            } else if result.prs.isEmpty && result.events.isEmpty && settingsToken != nil {
+                scopeHint = "Nothing visible with the Settings token — it may lack access "
+                    + "to your repos. Clear it in Settings to use the gh CLI login."
+            } else {
+                scopeHint = nil
+            }
         } catch let apiError as GitHubAPIError {
             self.error = apiError.message
+            log.notice("refresh failed: \(apiError.message, privacy: .public)")
         } catch {
             self.error = "GitHub unreachable"
+            log.notice("refresh failed: \(error, privacy: .public)")
         }
     }
 
-    /// Settings token first; otherwise borrow the local `gh` CLI login.
-    private func resolveToken() -> String? {
-        let fromSettings = AppSettings.shared.githubToken
-        if !fromSettings.isEmpty { return fromSettings }
+    private func fetchAll(
+        user: String, token: String
+    ) async throws -> (prs: [GitHubPR], events: [GitHubEvent], seesPrivateRepos: Bool?) {
+        async let prs = fetchOpenPRs(user: user, token: token)
+        async let evts = fetchEvents(user: user, token: token)
+        let (prList, seesPrivateRepos) = try await prs
+        return (prList, try await evts, seesPrivateRepos)
+    }
+
+    /// Token type by prefix ("gho_" = OAuth/CLI, "ghp_" = classic PAT,
+    /// "gith" = fine-grained PAT). Never logs the token itself.
+    private static func tokenKind(_ token: String) -> String {
+        String(token.prefix(4))
+    }
+
+    /// Borrow the local `gh` CLI login.
+    private func cliToken() -> String? {
         if let cached = cachedCLIToken { return cached }
         for ghPath in ["/opt/homebrew/bin/gh", "/usr/local/bin/gh"]
         where FileManager.default.isExecutableFile(atPath: ghPath) {
@@ -90,11 +134,22 @@ final class GitHubService {
         }
     }
 
-    private func fetchOpenPRs(user: String, token: String) async throws -> [GitHubPR] {
+    /// `seesPrivateRepos` is nil when the token type does not report scopes
+    /// (fine-grained PATs send no `X-OAuth-Scopes` header).
+    private func fetchOpenPRs(
+        user: String, token: String
+    ) async throws -> (prs: [GitHubPR], seesPrivateRepos: Bool?) {
         let query = "is:pr+is:open+author:\(user)"
         let (data, response) = try await URLSession.shared.data(
             for: request("/search/issues?q=\(query)&sort=updated&per_page=6", token: token))
         try check(response)
+        var seesPrivateRepos: Bool?
+        if let scopes = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-OAuth-Scopes") {
+            seesPrivateRepos = scopes
+                .components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .contains("repo")
+        }
 
         struct SearchResult: Decodable {
             struct Item: Decodable {
@@ -107,7 +162,7 @@ final class GitHubService {
             let items: [Item]
         }
         let result = try JSONDecoder().decode(SearchResult.self, from: data)
-        return result.items.map {
+        let prs = result.items.map {
             GitHubPR(
                 id: $0.id,
                 title: $0.title,
@@ -116,6 +171,7 @@ final class GitHubService {
                 updated: ISO8601DateFormatter().date(from: $0.updated_at)
             )
         }
+        return (prs, seesPrivateRepos)
     }
 
     private func fetchEvents(user: String, token: String) async throws -> [GitHubEvent] {
