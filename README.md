@@ -1,7 +1,7 @@
 # Deskboard
 
 A calm, single-screen macOS dashboard built for an iPad used as a second display
-(Sidecar). Eight widgets, three appearances, native full screen, no accounts of
+(Sidecar). Nine widgets, three appearances, native full screen, no accounts of
 its own — everything it shows comes from services you already use.
 
 | Light | Dark | Dark Color |
@@ -19,6 +19,7 @@ its own — everything it shows comes from services you already use.
 | **Batteries** | Mac battery plus paired iPad/iPhone levels | IOKit; iOS devices via [libimobiledevice](https://libimobiledevice.org) (USB or Finder Wi-Fi sync) |
 | **Claude Code** | Live Claude Code sessions (running / waiting / done), `/usage` rate-limit bars, today's token totals | A small status API you host (contract below), the local Claude Code login, local transcripts |
 | **Calendar** | Next 7 days from every calendar in the macOS Calendar app | EventKit, read-only |
+| **Spotify** | What is playing on any of your devices: artwork, track, progress, previous / play-pause / next | Spotify Web API with your own developer app (PKCE login); controls need Premium |
 | **Reminders** | Checklists you can tick off and add to | inTouch reminders add-on (`X-API-Key`), optional |
 | **Mail** | Newest inbox messages and unread count | Built-in minimal IMAP client, read-only (`EXAMINE`, `BODY.PEEK`) |
 | **GitHub** | Your open pull requests and recent activity | GitHub REST API with a PAT or your `gh` CLI login |
@@ -59,11 +60,24 @@ UserDefaults, every secret in the macOS Keychain under the service
 | Mail | IMAP host, user, password (TLS on port 993) |
 | GitHub | Username + PAT (classic with `repo`, or fine-grained read). Leave the token empty to reuse `gh auth token`. |
 | inTouch | Backend URL + API key |
+| Spotify | Client ID of your own Spotify app + Connect button (see below) |
 | General | Weather city, appearance (Auto / Light / Dark / Dark Color), start in full screen, display |
 
 **Full screen & displays.** Deskboard enters native macOS full screen on launch (toggle in
 General) and remembers which display it was on. Move it with the Display picker in
 Settings or ⇧⌘M (View → Move to Next Display).
+
+### Spotify widget
+
+1. Create an app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)
+   (Web API, no SDKs needed) and add `deskboard://spotify-callback` as a redirect URI.
+2. Paste its Client ID into Settings → Spotify and click **Connect Spotify…**. The browser
+   asks for `user-read-playback-state`, `user-modify-playback-state` and
+   `user-read-currently-playing`, then hands the code back through the `deskboard://` URL
+   scheme (Authorization Code with PKCE — there is no client secret).
+3. Only the refresh token is stored (Keychain). The widget polls `/v1/me/player` every 3 s and
+   interpolates the progress bar in between; previous / play-pause / next call the player
+   endpoints, which Spotify only allows for Premium accounts.
 
 ### Claude Code widget
 
@@ -98,7 +112,8 @@ Today's token totals are summed from the local transcripts in `~/.claude/project
   `gh`, `security`, `idevice_id`/`ideviceinfo` with absolute paths. This is deliberate for
   a local dashboard and is why there is no App Store build.
 - **Secrets never leave the Keychain** except to the host you configured for that widget
-  (or `api.anthropic.com` / `api.github.com` for the Claude and GitHub widgets).
+  (or `api.anthropic.com` / `api.github.com` / `api.spotify.com` for the Claude, GitHub and
+  Spotify widgets).
 - **Mail is read-only.** The IMAP client opens the mailbox with `EXAMINE` and fetches
   headers with `BODY.PEEK`, so nothing is ever marked as read or changed.
 - **Logs** go to the unified log (`subsystem com.maxvogt.deskboard`) and contain status

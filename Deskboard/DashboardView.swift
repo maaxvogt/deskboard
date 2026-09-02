@@ -20,6 +20,8 @@ struct DashboardView: View {
             VStack(spacing: Theme.gridSpacing) {
                 CalendarWidget()
                     .frame(maxHeight: .infinity)
+                SpotifyWidget()
+                    .frame(height: 136)
                 RemindersWidget()
                     .frame(maxHeight: .infinity)
             }

@@ -21,6 +21,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         ENABLE_HARDENED_RUNTIME: false
         GENERATE_INFOPLIST_FILE: true
+        # Extra keys (URL scheme for the Spotify login redirect) are merged from this file.
+        INFOPLIST_FILE: Deskboard/Info.plist
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Deskboard shows your upcoming events in the calendar widget."
         INFOPLIST_KEY_NSCalendarsUsageDescription: "Deskboard shows your upcoming events in the calendar widget."

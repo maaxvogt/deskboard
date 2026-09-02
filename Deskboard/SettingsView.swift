@@ -9,6 +9,7 @@ struct SettingsView: View {
             mailTab.tabItem { Label("Mail", systemImage: "envelope") }
             githubTab.tabItem { Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right") }
             inTouchTab.tabItem { Label("inTouch", systemImage: "checklist") }
+            spotifyTab.tabItem { Label("Spotify", systemImage: "music.note") }
             generalTab.tabItem { Label("General", systemImage: "gearshape") }
         }
         .frame(width: 460)
@@ -60,6 +61,43 @@ struct SettingsView: View {
         }
         .padding(20)
     }
+
+    private var spotifyTab: some View {
+        Form {
+            TextField("Client ID", text: $settings.spotifyClientID)
+            LabeledContent("Redirect URI") {
+                Text(SpotifyAuth.redirectURI)
+                    .font(Theme.caption.monospaced())
+                    .textSelection(.enabled)
+            }
+            Text("Create an app at developer.spotify.com/dashboard, add the redirect URI above, paste its Client ID here, then connect. Playback controls need Spotify Premium.")
+                .font(Theme.caption)
+                .foregroundStyle(Theme.muted)
+
+            HStack {
+                if spotify.isConnected {
+                    Label("Connected", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(Theme.ok)
+                    Spacer()
+                    Button("Disconnect") { spotify.disconnect() }
+                } else {
+                    Label("Not connected", systemImage: "circle")
+                        .foregroundStyle(Theme.muted)
+                    Spacer()
+                    Button("Connect Spotify…") { spotify.beginLogin() }
+                        .disabled(settings.spotifyClientID.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            if let error = spotify.lastError {
+                Text(error)
+                    .font(Theme.caption)
+                    .foregroundStyle(Theme.bad)
+            }
+        }
+        .padding(20)
+    }
+
+    private var spotify: SpotifyAuth { SpotifyAuth.shared }
 
     private var windows: WindowManager { WindowManager.shared }
 

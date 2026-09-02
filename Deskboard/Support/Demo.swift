@@ -107,6 +107,33 @@ enum Demo {
         ]
     }
 
+    // MARK: - Spotify
+
+    /// A track that has been playing since `started`, looping over its length.
+    static func spotify(started: Date) -> SpotifyPlayback {
+        let duration: TimeInterval = 227
+        let elapsed = Date().timeIntervalSince(started) + 83
+        return SpotifyPlayback(
+            trackID: "demo", title: "Glass Harbour", artist: "Lowlight Ensemble", album: "Still Water",
+            artworkURL: nil, duration: duration, position: elapsed.truncatingRemainder(dividingBy: duration),
+            isPlaying: true, fetchedAt: Date())
+    }
+
+    /// Drawn locally so demo mode stays offline.
+    static let spotifyArtwork: NSImage = {
+        let size = NSSize(width: 300, height: 300)
+        let image = NSImage(size: size)
+        image.lockFocus()
+        NSGradient(colors: [NSColor(hex: 0x1F3A5F), NSColor(hex: 0x6FA3C7), NSColor(hex: 0xE8C9A0)])!
+            .draw(in: NSRect(origin: .zero, size: size), angle: 60)
+        NSColor(hex: 0x0F1E33).withAlphaComponent(0.55).setFill()
+        NSBezierPath(ovalIn: NSRect(x: 165, y: 45, width: 110, height: 110)).fill()
+        NSColor.white.withAlphaComponent(0.35).setFill()
+        NSBezierPath(rect: NSRect(x: 0, y: 200, width: 300, height: 3)).fill()
+        image.unlockFocus()
+        return image
+    }()
+
     // MARK: - Reminders
 
     static let reminderAreas = [

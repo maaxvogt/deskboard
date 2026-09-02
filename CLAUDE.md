@@ -44,6 +44,11 @@ und die offenen Schritte.
 - **Reminders-Widget** ↔ inTouch `api/addons/reminders.js` (X-API-Key). Der Spiegel ist
   Klartext, aber NUR für in der App pro Bereich freigegebene, LOKALE Bereiche — geteilte
   Bereiche bleiben E2E und tauchen hier nie auf. Diese Grenze nicht aufweichen.
+- **Spotify-Widget** ↔ Spotify Web API (`/v1/me/player`, Auth-Code + PKCE, eigene Developer-App
+  des Nutzers, Client-ID in den Settings, Refresh-Token im Keychain). Redirect über das
+  URL-Scheme `deskboard://spotify-callback` (`Deskboard/Info.plist`, wird in die generierte
+  Info.plist gemergt; Empfang im `AppDelegate`). Steuerung braucht Premium (403
+  `PREMIUM_REQUIRED` → Hinweis im Widget).
 - **Mail**: eigener minimaler IMAP-Client (`Widgets/Email/IMAPClient.swift`), bewusst ohne
   Fremd-Dependency und nur lesend (EXAMINE statt SELECT).
 

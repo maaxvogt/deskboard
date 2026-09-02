@@ -6,6 +6,26 @@
 
 ## Aktueller Stand (2.9.2026)
 
+**Spotify-Widget (2.9.2026, uncommittet):** Neuntes Widget in der dritten Spalte zwischen
+Calendar und Reminders (feste Höhe 136): Albumcover links (84 pt), rechts Titel, „Artist ·
+Album" und eine Reihe mit ⏮ ⏯ ⏭ + Fortschrittsbalken + Position. Quelle: **Spotify Web API**
+(Max' Entscheidung, weil keine Spotify-Desktop-App auf dem Mac liegt; zeigt jedes Gerät des
+Accounts). `Widgets/Spotify/`: `SpotifyService` (View-Modell, Backend-Seam
+`SpotifyBackend`, Demo-Backend), `SpotifyWebAPI` (`GET /v1/me/player?additional_types=track,episode`,
+PUT play/pause, POST next/previous, Fehler-Mapping 401/403 PREMIUM_REQUIRED/404/429),
+`SpotifyAuth` (Auth-Code + PKCE gegen die eigene Developer-App, Client-ID in UserDefaults,
+Refresh-Token im Keychain `spotifyRefreshToken`, Access-Token nur im RAM, `invalid_grant` →
+Disconnect + Hinweis). Redirect `deskboard://spotify-callback`: URL-Scheme in
+`Deskboard/Info.plist` (per `INFOPLIST_FILE` in die generierte Plist gemergt, verifiziert per
+`plutil`), Empfang über `AppDelegate.application(_:open:)` (kein zweites Fenster). Settings →
+Tab „Spotify" (Client-ID, Redirect-URI zum Kopieren, Connect/Disconnect, Fehlerzeile).
+Polling 3 s, Fortschritt per `TimelineView` sekündlich interpoliert. Verifiziert: Build grün,
+Demo-Snapshots in allen drei Appearances, Callback-Empfang per os_log (Kategorie `spotify`:
+„Callback ignored: state mismatch"), PKCE-Challenge gegen den RFC-7636-Testvektor.
+**Offen:** Ende-zu-Ende-Login braucht Max' Spotify-Developer-App (Client-ID) — noch nicht
+durchgeführt; 429-Handling ist nur Hinweistext (kein Retry-After-Backoff). Hinweis: Spotify
+gewährt neuen Apps im Development-Mode nur wenige Nutzer, für den Eigengebrauch reicht das.
+
 **Veröffentlichung (2.9.2026):** Repo ist öffentlich; Historie neu aufgesetzt (ein Root-Commit „Initial public release“, alte Commits nur noch lokal als Bundle unter `~/Documents/Deskboard-history-backup.bundle`). Audit ohne Befund bei
 Secrets (Code + komplette Historie), aber persönliche Werte entfernt: Defaults für
 claudeAPIBase / inTouchAPIBase / githubUser / imapHost sind jetzt **leer** (Werte liegen in den

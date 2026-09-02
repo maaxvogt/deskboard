@@ -109,6 +109,7 @@ enum Theme {
     static var tintBattery: Tint { tint(surface: 0x1B2A1C, light: 0x2E7D4F, dark: 0x6FBE8E) }
     static var tintClaude: Tint { tint(surface: 0x232136, light: 0x5B54B0, dark: 0x9D96DF) }
     static var tintCalendar: Tint { tint(surface: 0x2D2022, light: 0xB04A44, dark: 0xD98A82) }
+    static var tintSpotify: Tint { tint(surface: 0x182A21, light: 0x1E8C55, dark: 0x62C98D) }
     static var tintReminders: Tint { tint(surface: 0x2B2518, light: 0xA87A1C, dark: 0xD3A94E) }
     static var tintMail: Tint { tint(surface: 0x1A2733, light: 0x3577A8, dark: 0x7FB2D9) }
     static var tintGitHub: Tint { tint(surface: 0x25242C, light: 0x63637A, dark: 0xA2A2B5) }

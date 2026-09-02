@@ -2,6 +2,8 @@ import SwiftUI
 
 @main
 struct DeskboardApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     init() {
         #if DEBUG
         DebugSnapshot.scheduleIfRequested()
@@ -27,6 +29,14 @@ struct DeskboardApp: App {
         Settings {
             SettingsView()
         }
+    }
+}
+
+/// Receives `deskboard://…` URLs (the Spotify login redirect) without SwiftUI
+/// opening a second dashboard window for them.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls { SpotifyAuth.shared.handleCallback(url) }
     }
 }
 

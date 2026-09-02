@@ -31,6 +31,10 @@ final class AppSettings {
     var inTouchAPIBase: String { didSet { UserDefaults.standard.set(inTouchAPIBase, forKey: "inTouchAPIBase") } }
     var inTouchKey: String { didSet { KeychainHelper.set(inTouchKey, for: "inTouchKey") } }
 
+    // MARK: Spotify
+    /// Client ID of the user's own Spotify developer app (PKCE, no secret).
+    var spotifyClientID: String { didSet { UserDefaults.standard.set(spotifyClientID, forKey: "spotifyClientID") } }
+
     // MARK: Weather
     var weatherPlace: String { didSet { UserDefaults.standard.set(weatherPlace, forKey: "weatherPlace") } }
 
@@ -54,6 +58,7 @@ final class AppSettings {
         githubToken = KeychainHelper.get("githubToken") ?? ""
         inTouchAPIBase = d.string(forKey: "inTouchAPIBase") ?? ""
         inTouchKey = KeychainHelper.get("inTouchKey") ?? ""
+        spotifyClientID = d.string(forKey: "spotifyClientID") ?? ""
         weatherPlace = d.string(forKey: "weatherPlace") ?? ""
         // Demo launches pin the appearance and stay windowed; assignments in
         // init don't run didSet, so nothing is persisted.
