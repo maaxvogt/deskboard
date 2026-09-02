@@ -41,7 +41,8 @@ und die offenen Schritte.
   Rate-Limit-Balken (`ClaudeRateLimitService`) ↔ interner Anthropic-Endpunkt
   `/api/oauth/usage` mit dem Claude-Code-Token aus dem Keychain (`security`-CLI) — kann
   sich ohne Vorwarnung ändern; Parser bewusst tolerant, Details in PROGRESS.md.
-- **Reminders-Widget** ↔ inTouch `api/addons/reminders.js` (X-API-Key). Der Spiegel ist
+- **Reminders-Widget** ↔ inTouch `api/addons/reminders.js` (X-API-Key; GET areas/items, POST items,
+  PATCH items/:id, DELETE items?area=&done=true für „Erledigte löschen"). Der Spiegel ist
   Klartext, aber NUR für in der App pro Bereich freigegebene, LOKALE Bereiche — geteilte
   Bereiche bleiben E2E und tauchen hier nie auf. Diese Grenze nicht aufweichen.
 - **Spotify-Widget** ↔ Spotify Web API (`/v1/me/player`, Auth-Code + PKCE, eigene Developer-App

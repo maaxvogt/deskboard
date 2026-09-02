@@ -20,7 +20,7 @@ its own — everything it shows comes from services you already use.
 | **Claude Code** | Live Claude Code sessions (running / waiting / done), `/usage` rate-limit bars, today's token totals | A small status API you host (contract below), the local Claude Code login, local transcripts |
 | **Calendar** | Next 7 days from every calendar in the macOS Calendar app | EventKit, read-only |
 | **Spotify** | What is playing on any of your devices: artwork, track, progress, previous / play-pause / next | Spotify Web API with your own developer app (PKCE login); controls need Premium |
-| **Reminders** | Checklists you can tick off and add to | inTouch reminders add-on (`X-API-Key`), optional |
+| **Reminders** | Checklists you can tick off, add to, and clear of completed items | inTouch reminders add-on (`X-API-Key`), optional |
 | **Mail** | Newest inbox messages and unread count | Built-in minimal IMAP client, read-only (`EXAMINE`, `BODY.PEEK`) |
 | **GitHub** | Your open pull requests and recent activity | GitHub REST API with a PAT or your `gh` CLI login |
 

@@ -60,6 +60,7 @@ final class InTouchClient {
                 .flatMap { $0["error"] as? String }
             switch status {
             case 401, 403: throw APIStatusError(message: "API key rejected — check Settings")
+            case 404 where method == "DELETE": throw APIStatusError(message: "Backend does not support clearing completed items yet")
             case 404: throw APIStatusError(message: "Reminders addon not available yet on the backend")
             default: throw APIStatusError(message: serverMessage ?? "inTouch error \(status)")
             }
@@ -137,6 +138,29 @@ final class InTouchClient {
             // Item IDs churn when the app pushes a fresh snapshot; a 404 here
             // usually means our list is stale — resync instead of just rolling back.
             await loadItems()
+        }
+    }
+
+    /// Number of ticked-off todos in the current list (headings never count).
+    var doneCount: Int { items.filter { $0.type == "text" && $0.done }.count }
+
+    /// "Clear completed" like in the inTouch app: removes every ticked-off todo of
+    /// the selected area; the app deletes them on its next sync.
+    func deleteDone() async {
+        guard let area = selectedArea, doneCount > 0 else { return }
+        let before = items
+        items.removeAll { $0.type == "text" && $0.done }
+        if Demo.active { return }
+        let safeArea = area.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
+        do {
+            _ = try await request("/api/addons/reminders/items?area=\(safeArea)&done=true", method: "DELETE")
+            await loadItems()
+        } catch let status as APIStatusError {
+            items = before
+            self.error = status.message
+        } catch {
+            items = before
+            self.error = "Could not delete completed items"
         }
     }
 

@@ -6,6 +6,18 @@
 
 ## Aktueller Stand (2.9.2026)
 
+**Reminders „Erledigte löschen" (2.9.2026):** Papierkorb-Button in der Titelzeile des
+Reminders-Widgets (nur sichtbar, wenn abgehakte Todos da sind), Bestätigungsdialog wie in
+der App, dann `DELETE /api/addons/reminders/items?area=<id>&done=true`, optimistisch
+lokal entfernt, bei Fehler Rollback + Meldung. Backend-Seite (inTouch `reminders.js`):
+Soft-Delete `is_deleted=1, pending=1`, Spiegel blendet sofort aus, App löscht per
+Pending-Op (`deleted: true` → `ReminderStore.deleteItem`) und räumt per ack. **Neue
+Spalte** `is_deleted` → einmalig auf der Prod-D1: `ALTER TABLE api_reminder_items ADD COLUMN
+is_deleted INTEGER NOT NULL DEFAULT 0;` **Deploy + Migration standen am 2.9. noch aus**
+(Wrangler war mit dem Arbeits-Account eingeloggt) — bis dahin meldet der Button „Backend
+does not support clearing completed items yet" (404). App-Seite braucht einen neuen
+Device-Build.
+
 **Spotify-Widget (2.9.2026, uncommittet):** Neuntes Widget in der dritten Spalte zwischen
 Calendar und Reminders (feste Höhe 136): Albumcover links (84 pt), rechts Titel, „Artist ·
 Album" und eine Reihe mit ⏮ ⏯ ⏭ + Fortschrittsbalken + Position. Quelle: **Spotify Web API**
