@@ -13,10 +13,10 @@ lokal entfernt, bei Fehler Rollback + Meldung. Backend-Seite (inTouch `reminders
 Soft-Delete `is_deleted=1, pending=1`, Spiegel blendet sofort aus, App löscht per
 Pending-Op (`deleted: true` → `ReminderStore.deleteItem`) und räumt per ack. **Neue
 Spalte** `is_deleted` → einmalig auf der Prod-D1: `ALTER TABLE api_reminder_items ADD COLUMN
-is_deleted INTEGER NOT NULL DEFAULT 0;` **Deploy + Migration standen am 2.9. noch aus**
-(Wrangler war mit dem Arbeits-Account eingeloggt) — bis dahin meldet der Button „Backend
-does not support clearing completed items yet" (404). App-Seite braucht einen neuen
-Device-Build.
+is_deleted INTEGER NOT NULL DEFAULT 0;` Migration + Deploy am 2.9.2026 erledigt (Worker-Version fd140d0a; Route live, antwortet
+ohne Key mit 401 statt 404). **Offen:** App-Seite (Lösch-Op im Sync) liegt uncommittet im
+inTouch-Working-Tree und braucht einen neuen Device-Build — bis dahin verschwinden gelöschte
+Items zwar im Widget, aber noch nicht in der App.
 
 **Spotify-Widget (2.9.2026, uncommittet):** Neuntes Widget in der dritten Spalte zwischen
 Calendar und Reminders (feste Höhe 136): Albumcover links (84 pt), rechts Titel, „Artist ·
