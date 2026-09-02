@@ -1,0 +1,17 @@
+# Xcode
+*.xcodeproj
+xcuserdata/
+DerivedData/
+build/
+*.xcresult
+
+# Local signing (Apple Team ID) — see project.local.yml.example
+project.local.yml
+
+# macOS
+.DS_Store
+
+# Secrets — never commit credentials
+*.p8
+.dev.vars
+.env

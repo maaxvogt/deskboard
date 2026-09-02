@@ -1,0 +1,8 @@
+# Copy to project.local.yml (gitignored) and put your Apple Team ID here, then:
+#   xcodegen generate --spec project.local.yml
+include: [project.yml]
+targets:
+  Deskboard:
+    settings:
+      base:
+        DEVELOPMENT_TEAM: YOUR_TEAM_ID
